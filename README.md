@@ -11,40 +11,20 @@ An agentic Retrieval-Augmented Generation (RAG) system that answers UAE/GCC fina
 Fintech and digital banking teams operating in the UAE must comply simultaneously with overlapping, sometimes conflicting regulatory regimes — DFSA (DIFC financial services), CBUAE (federal banking/payments), VARA (virtual assets, Dubai), and UAE PDPL (data protection). Manually cross-referencing rulebooks is slow and error-prone. Generic RAG chatbots hallucinate citations and can't detect cross-regulator conflicts.
 
 ## Architecture
-
-┌──────────────────┐
-                    │    User Query      │
-                    └─────────┬──────────┘
-                              ▼
-                  ┌────────────────────────┐
-                  │    Supervisor Agent       │  ← Gemini 2.5 Flash
-                  │  (query classification)   │
-                  └─────────┬──────────────┘
-                              ▼
-        ┌───────────┬───────────┬───────────┬───────────┐
-        ▼           ▼           ▼           ▼
-   ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐
-   │  DFSA     │ │  CBUAE    │ │  VARA     │ │  PDPL     │   ← Specialist Retrieval
-   │  Agent    │ │  Agent    │ │  Agent    │ │  Agent    │      Agents (Pinecone
-   └─────┬───┘ └─────┬───┘ └─────┬───┘ └─────┬───┘      metadata-filtered)
-         └───────────┴───────────┴───────────┘
-                              ▼
-                  ┌────────────────────────┐
-                  │     Conflict Agent        │  ← flags contradictions
-                  │   (cross-regulator)       │     when 2+ bodies retrieved
-                  └─────────┬──────────────┘
-                              ▼
-                  ┌────────────────────────┐
-                  │      Answer Agent          │  ← grounded generation,
-                  │  (citation-first,          │     refuses if unsupported
-                  │   hallucination guard)     │
-                  └─────────┬──────────────┘
-                              ▼
-                  ┌────────────────────────┐
-                  │      Streamlit UI            │
-                  └────────────────────────┘
-
-
+```mermaid
+flowchart TD
+    A[User Query] --> B[Supervisor Agent<br/>Gemini 2.5 Flash<br/>query classification]
+    B --> C1[DFSA Agent]
+    B --> C2[CBUAE Agent]
+    B --> C3[VARA Agent]
+    B --> C4[PDPL Agent]
+    C1 --> D[Conflict Agent<br/>flags contradictions<br/>when 2+ bodies retrieved]
+    C2 --> D
+    C3 --> D
+    C4 --> D
+    D --> E[Answer Agent<br/>citation-first<br/>hallucination guard]
+    E --> F[Streamlit UI]
+```
 Orchestrated as a stateful graph using **LangGraph**, not a linear chain — enables conditional routing and multi-agent state sharing (`AgentState` TypedDict flows through supervisor → retrieval → conflict → answer nodes).
 
 ## Key Design Decisions
