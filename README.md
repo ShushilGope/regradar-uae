@@ -11,20 +11,23 @@ An agentic Retrieval-Augmented Generation (RAG) system that answers UAE/GCC fina
 Fintech and digital banking teams operating in the UAE must comply simultaneously with overlapping, sometimes conflicting regulatory regimes — DFSA (DIFC financial services), CBUAE (federal banking/payments), VARA (virtual assets, Dubai), and UAE PDPL (data protection). Manually cross-referencing rulebooks is slow and error-prone. Generic RAG chatbots hallucinate citations and can't detect cross-regulator conflicts.
 
 ## Architecture
+
+
 ```mermaid
 flowchart TD
-    A[User Query] --> B[Supervisor Agent<br/>Gemini 2.5 Flash<br/>query classification]
-    B --> C1[DFSA Agent]
-    B --> C2[CBUAE Agent]
-    B --> C3[VARA Agent]
-    B --> C4[PDPL Agent]
-    C1 --> D[Conflict Agent<br/>flags contradictions<br/>when 2+ bodies retrieved]
+    A["User Query"] --> B["Supervisor Agent (Gemini 2.5 Flash) - Query Classification"]
+    B --> C1["DFSA Agent"]
+    B --> C2["CBUAE Agent"]
+    B --> C3["VARA Agent"]
+    B --> C4["PDPL Agent"]
+    C1 --> D["Conflict Agent - Flags Contradictions"]
     C2 --> D
     C3 --> D
     C4 --> D
-    D --> E[Answer Agent<br/>citation-first<br/>hallucination guard]
-    E --> F[Streamlit UI]
+    D --> E["Answer Agent - Citation-First, Hallucination Guard"]
+    E --> F["Streamlit UI"]
 ```
+
 Orchestrated as a stateful graph using **LangGraph**, not a linear chain — enables conditional routing and multi-agent state sharing (`AgentState` TypedDict flows through supervisor → retrieval → conflict → answer nodes).
 
 ## Key Design Decisions
@@ -54,27 +57,6 @@ Orchestrated as a stateful graph using **LangGraph**, not a linear chain — ena
 4. **Compliance gap analyser** — paste a product feature description → system maps applicable clauses across all 4 bodies and flags MET/UNMET/UNCLEAR per clause + overall risk rating
 5. **Change detection (v1 stub)** — `ingestion/run_all.py` + `ingestion/embed_upload.py` are designed to be re-run on a schedule (cron/Airflow in v2) when source PDFs are updated; re-ingestion is idempotent via deterministic chunk IDs
 
-## Project Structure
-regradar-uae/
-├── app.py                    # Streamlit entrypoint
-├── config.py                 # env/secrets loader
-├── agents/
-│   ├── supervisor.py         # query classifier
-│   ├── retrieval_agents.py   # per-regulator retriever
-│   ├── conflict_agent.py     # cross-regulatory conflict detection
-│   ├── answer_agent.py       # grounded answer generation
-│   └── graph.py              # LangGraph state machine
-├── core/
-│   ├── citation.py           # citation formatter
-│   └── gap_analyzer.py       # compliance gap analysis
-├── ingestion/
-│   ├── chunker.py            # PDF → chunks + metadata
-│   ├── section_tagger.py     # regex Article/Section extraction
-│   ├── setup_index.py        # Pinecone index creation
-│   ├── embed_upload.py       # embedding + upsert
-│   └── run_all.py            # batch ingestion runner
-└── ui/
-└── styles.py              # custom CSS
 
 ## Setup
 
