@@ -1,5 +1,6 @@
 import google.generativeai as genai
 from config import GEMINI_API_KEY, LLM_MODEL
+from core.llm_utils import call_with_retry
 
 genai.configure(api_key=GEMINI_API_KEY)
 model = genai.GenerativeModel(LLM_MODEL)
@@ -23,4 +24,4 @@ Do these clauses CONTRADICT or CONFLICT with each other on this question?
 Reply in this format:
 CONFLICT: Yes/No
 EXPLANATION: <1-2 sentences if Yes, else "No conflicts found">"""
-    return model.generate_content(prompt).text.strip()
+    return call_with_retry(model.generate_content, prompt).text.strip()

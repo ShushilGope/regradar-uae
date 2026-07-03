@@ -1,6 +1,7 @@
 import google.generativeai as genai
 from config import GEMINI_API_KEY, LLM_MODEL
 from core.citation import build_context_block, format_citations
+from core.llm_utils import call_with_retry
 
 genai.configure(api_key=GEMINI_API_KEY)
 model = genai.GenerativeModel(LLM_MODEL)
@@ -19,5 +20,5 @@ Question: {query}
 
 Answer (with inline [n] citations):"""
 
-    answer = model.generate_content(prompt).text.strip()
+    answer = call_with_retry(model.generate_content, prompt).text.strip()
     return {"answer": answer, "citations": citations}

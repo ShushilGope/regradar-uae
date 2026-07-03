@@ -2,12 +2,12 @@ import google.generativeai as genai
 from config import GEMINI_API_KEY, LLM_MODEL, REG_BODIES
 from agents.retrieval_agents import retrieve
 from core.citation import build_context_block, format_citations
+from core.llm_utils import call_with_retry
 
 genai.configure(api_key=GEMINI_API_KEY)
 model = genai.GenerativeModel(LLM_MODEL)
 
 def analyze_gap(feature_description: str) -> dict:
-    # retrieve relevant clauses across all reg bodies
     retrieved = {}
     for body in REG_BODIES:
         retrieved[body] = retrieve(feature_description, body, top_k=3)
@@ -30,5 +30,5 @@ Task:
 
 Format as markdown with headers: Applicable Clauses, Gap Assessment, Risk Summary."""
 
-    result = model.generate_content(prompt).text.strip()
+    result = call_with_retry(model.generate_content, prompt).text.strip()
     return {"analysis": result, "citations": citations}
