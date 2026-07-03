@@ -3,3 +3,7 @@ venv/
 __pycache__/
 data/raw_pdfs/
 .streamlit/secrets.toml
+.DS_Store
+data/.DS_Store
+data/all_chunks.json
+app_backup*.py
