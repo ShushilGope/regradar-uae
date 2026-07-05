@@ -2,7 +2,7 @@
 
 An agentic Retrieval-Augmented Generation (RAG) system that answers UAE/GCC financial compliance questions by reasoning across multiple regulatory bodies (DFSA, CBUAE, VARA, PDPL) — not a single monolithic retriever, but a graph of cooperating specialist agents.
 
-**Live demo:** [add Streamlit URL after deployment]
+**Live demo:** https://regradar-uae.streamlit.app/
 
 ---
 
