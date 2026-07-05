@@ -7,3 +7,4 @@ pinecone==5.4.2
 langchain-pinecone==0.2.3
 pypdf==5.1.0
 python-dotenv==1.0.1
+beautifulsoup4==4.12.3
