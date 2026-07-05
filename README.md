@@ -55,8 +55,7 @@ Orchestrated as a stateful graph using **LangGraph**, not a linear chain — ena
 2. **Regulatory conflict detection** — dedicated agent cross-examines clauses from 2+ bodies, flags contradictions with explanation
 3. **Citation-first answers** — every response cites exact document, article/section, page number; hallucination guard refuses ungrounded claims
 4. **Compliance gap analyser** — paste a product feature description → system maps applicable clauses across all 4 bodies and flags MET/UNMET/UNCLEAR per clause + overall risk rating
-5. **Change detection (v1 stub)** — `ingestion/run_all.py` + `ingestion/embed_upload.py` are designed to be re-run on a schedule (cron/Airflow in v2) when source PDFs are updated; re-ingestion is idempotent via deterministic chunk IDs
-
+5. **Admin-gated document ingestion** — password-protected admin panel lets compliance teams upload new regulatory circulars the moment they're issued. Upload triggers the full pipeline (chunk → tag → embed → upsert) in-app, with automatic replacement of stale vectors for re-uploaded documents. Admins can also view indexed documents per regulator and delete outdated ones. This is a deliberate architectural choice over automated web scraping — regulator sites (DFSA/CBUAE/VARA) run bot-detection that blocks headless scraping, and compliance-grade systems arguably should have human verification before a new "regulation" enters the knowledge base anyway.
 
 ## Setup
 
@@ -70,11 +69,21 @@ python -m ingestion.embed_upload
 streamlit run app.py
 ```
 
-## Limitations & Roadmap
+## Limitations & Known Vulnerabilities
 
-- Source PDFs currently ingested manually (v1); v2 would add scheduled scraping + diffing against previous version to trigger re-embedding only for changed sections
+**Functional limitations**
 - Section/Article extraction uses regex heuristics — works well for numbered clauses, less reliable for prose-style rulebook sections
-- Not legal advice — outputs are informational aids for compliance teams, not a substitute for legal counsel
+- Pinecone doesn't support native metadata-only listing; the admin "view documents" feature approximates via a sampled query rather than a guaranteed exhaustive list — acceptable at current corpus size (~1000 chunks), would need a separate document registry at scale
+- UAE PDPL has no structured "updates" feed (unlike DFSA/CBUAE/VARA), so it's monitored manually via UAE Data Office announcements rather than through the admin pipeline's upload cadence
+- Citation grounding is enforced via prompt instruction, not structurally verified — the model could in principle cite an index that doesn't support a claim; a post-generation citation-verification step (checking cited [n] indices resolve to real context) is a natural v2 addition
 
+**Security considerations (identified, not all mitigated in v1)**
+- **Cost-based DoS**: no per-session rate limiting on LLM calls; a public deployment with billing enabled is exposed to abuse-driven cost spikes. Mitigation path: session-level query caps or a lightweight auth gate on the query tabs themselves.
+- **Prompt injection**: user queries are concatenated directly into agent prompts without delimiter isolation. A crafted query could attempt to override system instructions. Mitigation path: wrap user input in explicit tags and instruct the model to treat contents as data, not commands.
+- **Indirect injection via ingested documents**: admin-uploaded PDFs are not sanitized for embedded adversarial instructions before chunking/embedding. Low risk currently given human-gated uploads, but relevant if ingestion is ever automated.
+- **Admin auth is a single shared password**, not per-user accounts — sufficient for a portfolio/demo deployment, not for multi-admin production use.
+- **Pinecone API key has full read/write/delete scope** in the deployed app; a leaked key could wipe the index. Production hardening would use a read-only key for the query path and a separate write-scoped key restricted to the ingestion pipeline.
+
+*Documenting these openly is intentional — a defensible compliance-adjacent AI system should have its threat model stated, not implied.*
 ---
 *Built as a demonstration of agentic RAG architecture for GCC RegTech use cases.*
